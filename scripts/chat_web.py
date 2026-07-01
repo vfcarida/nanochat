@@ -70,7 +70,7 @@ parser.add_argument('-s', '--step', type=int, default=None, help='Step to load')
 parser.add_argument('-p', '--port', type=int, default=8000, help='Port to run the server on')
 parser.add_argument('--device-type', type=str, default='', choices=['cuda', 'cpu', 'mps'], help='Device type for evaluation: cuda|cpu|mps. empty => autodetect')
 parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the server to')
-args = parser.parse_args()
+args, _ = parser.parse_known_args()
 
 # Configure logging for conversation traffic
 logging.basicConfig(
@@ -153,7 +153,7 @@ class ChatRequest(BaseModel):
 def validate_chat_request(request: ChatRequest):
     """Validate chat request to prevent abuse."""
     # Check number of messages
-    if len(request.messages) == 0:
+    if not request.messages or len(request.messages) == 0:
         raise HTTPException(status_code=400, detail="At least one message is required")
     if len(request.messages) > MAX_MESSAGES_PER_REQUEST:
         raise HTTPException(
@@ -164,8 +164,12 @@ def validate_chat_request(request: ChatRequest):
     # Check individual message lengths and total conversation length
     total_length = 0
     for i, message in enumerate(request.messages):
-        if not message.content:
-            raise HTTPException(status_code=400, detail=f"Message {i} has empty content")
+        if message.role is None or message.content is None:
+            raise HTTPException(status_code=400, detail=f"Message {i} cannot contain null fields")
+        
+        stripped_content = message.content.strip()
+        if not stripped_content:
+            raise HTTPException(status_code=400, detail=f"Message {i} has empty or whitespace-only content")
 
         msg_length = len(message.content)
         if msg_length > MAX_MESSAGE_LENGTH:
@@ -186,7 +190,7 @@ def validate_chat_request(request: ChatRequest):
         if message.role not in ["user", "assistant"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Message {i} has invalid role. Must be 'user', 'assistant', or 'system'"
+                detail=f"Message {i} has invalid role. Must be 'user' or 'assistant'"
             )
 
     # Validate temperature

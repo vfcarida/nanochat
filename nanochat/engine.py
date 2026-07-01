@@ -22,15 +22,44 @@ from nanochat.checkpoint_manager import load_model
 
 # -----------------------------------------------------------------------------
 # Calculator tool helpers
+import threading
+import _thread
+
 @contextmanager
 def timeout(duration, formula):
-    def timeout_handler(signum, frame):
-        raise Exception(f"'{formula}': timed out after {duration} seconds")
+    has_alarm = hasattr(signal, "alarm") and hasattr(signal, "SIGALRM")
+    if has_alarm:
+        def timeout_handler(signum, frame):
+            raise TimeoutError(f"'{formula}': timed out after {duration} seconds")
 
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(duration)
-    yield
-    signal.alarm(0)
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(duration)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+    else:
+        # Fallback using a background timer thread that calls _thread.interrupt_main()
+        timer = None
+        interrupted = False
+        def interrupt():
+            nonlocal interrupted
+            interrupted = True
+            _thread.interrupt_main()
+
+        timer = threading.Timer(duration, interrupt)
+        timer.start()
+        try:
+            yield
+        except KeyboardInterrupt:
+            if interrupted:
+                raise TimeoutError(f"'{formula}': timed out after {duration} seconds")
+            else:
+                raise KeyboardInterrupt
+        finally:
+            if timer is not None:
+                timer.cancel()
 
 def eval_with_timeout(formula, max_time=3):
     try:
@@ -39,9 +68,9 @@ def eval_with_timeout(formula, max_time=3):
                 warnings.simplefilter("ignore", SyntaxWarning)
                 return eval(formula, {"__builtins__": {}}, {})
     except Exception as e:
-        signal.alarm(0)
         # print(f"Warning: Failed to eval {formula}, exception: {e}") # it's ok ignore wrong calculator usage
         return None
+
 
 def use_calculator(expr):
     """

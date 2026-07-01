@@ -3,276 +3,842 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>NanoChat</title>
+    <title>NanoChat — Premium AI Assistant</title>
+    <meta name="description" content="Explore and interact with your trained nanochat LLM replicas using an advanced dashboard.">
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
+            --bg-primary: #090d16;
+            --bg-secondary: #0e1424;
+            --bg-panel: rgba(20, 26, 43, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --message-user: rgba(99, 102, 241, 0.15);
+            --message-assistant: rgba(255, 255, 255, 0.02);
+            --console-bg: #010409;
+            --sidebar-width: 320px;
+            --glass-blur: 16px;
+            color-scheme: dark;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --bg-panel: rgba(255, 255, 255, 0.75);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --accent-primary: #4f46e5;
+            --accent-secondary: #7c3aed;
+            --accent-gradient: linear-gradient(135deg, #4f46e5, #7c3aed);
+            --message-user: rgba(79, 70, 229, 0.1);
+            --message-assistant: rgba(0, 0, 0, 0.02);
+            --console-bg: #0f172a;
             color-scheme: light;
         }
 
         * {
             box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
-        html, body{
+        html, body {
             height: 100%;
             margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
 
         body {
-            font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
-            background-color: #ffffff;
-            color: #111827;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
             min-height: 100dvh;
-            margin: 0;
+        }
+
+        /* App Layout */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Sidebar Glassmorphism */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
+            z-index: 10;
+            backdrop-filter: blur(var(--glass-blur));
+            transition: transform 0.3s ease;
         }
 
-        .header {
-            background-color: #ffffff;
-            padding: 1.25rem 1.5rem;
+        .sidebar-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .header-left {
+        .logo-container {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        .header-logo {
-            height: 32px;
-            width: auto;
-        }
-
-        .header h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 0;
-            color: #111827;
-        }
-
-        .new-conversation-btn {
+        .logo-img {
             width: 32px;
             height: 32px;
-            padding: 0;
-            border: 1px solid #e5e7eb;
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        /* Control Sliders */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .control-value {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+            margin: 0.5rem 0;
+        }
+
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: 2px solid var(--bg-secondary);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+            transition: transform 0.1s ease;
+        }
+
+        .custom-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .control-description {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Live Stats Widget */
+        .stats-widget {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8125rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-val {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+        }
+
+        .badge-active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-inactive {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .gpus-list {
+            margin-top: 0.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+        }
+
+        .gpu-item {
+            padding: 0.25rem 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Theme / General Controls */
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .footer-btn {
+            flex: 1;
+            height: 40px;
+            border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            background-color: #ffffff;
-            color: #6b7280;
+            background-color: transparent;
+            color: var(--text-primary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
             transition: all 0.2s ease;
         }
 
-        .new-conversation-btn:hover {
-            background-color: #f3f4f6;
-            border-color: #d1d5db;
-            color: #374151;
+        .footer-btn:hover {
+            background-color: var(--border-color);
+            color: var(--accent-primary);
+        }
+
+        /* Main Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--bg-primary);
+            position: relative;
+        }
+
+        /* Chat Header */
+        .chat-header {
+            height: 64px;
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(var(--glass-blur));
+            z-index: 5;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .chat-title-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .chat-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
         }
 
         .chat-container {
             flex: 1;
             overflow-y: auto;
-            background-color: #ffffff;
+            scroll-behavior: smooth;
         }
 
         .chat-wrapper {
             max-width: 48rem;
             margin: 0 auto;
-            padding: 2rem 1.5rem 3rem;
+            padding: 2.5rem 1.5rem 6rem;
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1.5rem;
         }
 
+        /* Welcome Dashboard style when chat is empty */
+        .welcome-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+            padding: 2rem;
+            max-width: 32rem;
+            margin: auto;
+        }
+
+        .welcome-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1.5rem;
+            opacity: 0.85;
+        }
+
+        .welcome-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        .starters-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .starter-card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .starter-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+        }
+
+        .starter-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .starter-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Message Bubbles */
         .message {
             display: flex;
-            justify-content: flex-start;
-            margin-bottom: 0.5rem;
-            color: #0d0d0d;
+            gap: 1rem;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .message.assistant {
-            justify-content: flex-start;
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .message.user {
-            justify-content: flex-end;
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+            font-size: 0.875rem;
+        }
+
+        .message.user .avatar {
+            background: var(--accent-gradient);
+            color: #ffffff;
+        }
+
+        .message.assistant .avatar {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--accent-primary);
+        }
+
+        .message-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .message-sender {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-left: 0.5rem;
         }
 
         .message-content {
-            white-space: pre-wrap;
+            border-radius: 0.75rem;
+            padding: 0.85rem 1.1rem;
+            font-size: 0.95rem;
             line-height: 1.6;
-            max-width: 100%;
-        }
-
-        .message.assistant .message-content {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            margin-left: -0.5rem;
-            transition: background-color 0.2s ease;
-        }
-
-        .message.assistant .message-content:hover {
-            background-color: #f9fafb;
+            white-space: pre-wrap;
+            position: relative;
+            max-width: 85%;
         }
 
         .message.user .message-content {
-            background-color: #f3f4f6;
-            border-radius: 1.25rem;
-            padding: 0.8rem 1rem;
-            max-width: 65%;
+            background-color: var(--message-user);
+            border: 1px solid rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-top-left-radius: 0;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+        }
+
+        .message.user {
+            flex-direction: row;
+        }
+
+        .message.assistant {
+            flex-direction: row;
+        }
+
+        .message.assistant .message-content {
+            background-color: var(--message-assistant);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-top-left-radius: 0;
+            cursor: pointer;
         }
 
         .message.user .message-content:hover {
-            background-color: #e5e7eb;
+            border-color: var(--accent-primary);
+        }
+
+        .message.assistant .message-content:hover {
+            border-color: var(--accent-primary);
+        }
+
+        /* Tool output Console style */
+        .message.console {
+            margin-left: 3.25rem;
         }
 
         .message.console .message-content {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'Courier New', monospace;
-            font-size: 0.875rem;
-            background-color: #fafafa;
-            padding: 0.75rem 1rem;
-            color: #374151;
-            max-width: 80%;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            background-color: var(--console-bg);
+            border: 1px solid var(--border-color);
+            color: #38bdf8;
+            max-width: 90%;
+            padding: 0.8rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.4);
         }
 
+        /* Input Glass Container */
         .input-container {
-            background-color: #ffffff;
-            padding: 1rem;
-            padding-bottom: calc(1rem + env(safe-area-inset-bottom))
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem 2rem;
+            background: linear-gradient(to top, var(--bg-primary) 80%, transparent);
+            z-index: 5;
         }
 
         .input-wrapper {
             max-width: 48rem;
             margin: 0 auto;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 0.5rem 0.75rem;
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem;
             align-items: flex-end;
+            backdrop-filter: blur(var(--glass-blur));
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .chat-input {
             flex: 1;
-            padding: 0.8rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.75rem;
-            background-color: #ffffff;
-            color: #111827;
-            font-size: 1rem;
+            padding: 0.65rem 0.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.95rem;
             line-height: 1.5;
             resize: none;
             outline: none;
-            min-height: 54px;
-            max-height: 200px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            min-height: 24px;
+            max-height: 180px;
+            font-family: inherit;
         }
 
         .chat-input::placeholder {
-            color: #9ca3af;
-        }
-
-        .chat-input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            color: var(--text-muted);
         }
 
         .send-button {
             flex-shrink: 0;
-            padding: 0;
-            width: 54px;
-            height: 54px;
-            border: 1px solid #111827;
+            width: 40px;
+            height: 40px;
+            border: none;
             border-radius: 0.75rem;
-            background-color: #111827;
+            background: var(--accent-gradient);
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+            transition: transform 0.2s ease, opacity 0.2s ease;
         }
 
         .send-button:hover:not(:disabled) {
-            background-color: #2563eb;
-            border-color: #2563eb;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         .send-button:disabled {
             cursor: not-allowed;
-            border-color: #d1d5db;
-            background-color: #e5e7eb;
-            color: #9ca3af;
+            background: var(--border-color);
+            color: var(--text-muted);
+            box-shadow: none;
         }
 
+        /* Typing Shimmer Indicator */
         .typing-indicator {
-            display: inline-block;
-            color: #6b7280;
-            letter-spacing: 0.15em;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.5rem;
         }
 
-        .typing-indicator::after {
-            content: '···';
-            animation: typing 1.4s infinite;
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
         }
 
-        @keyframes typing {
-            0%, 60%, 100% { opacity: 0.2; }
-            30% { opacity: 1; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Custom scrollbar */
+        .chat-container::-webkit-scrollbar,
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track,
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb,
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 9999px;
         }
 
         .error-message {
-            background-color: #fee2e2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
+            background-color: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
             padding: 0.75rem 1rem;
-            border-radius: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
             margin-top: 0.5rem;
+            width: fit-content;
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-left">
-            <button class="new-conversation-btn" onclick="newConversation()" title="New Conversation (Ctrl+Shift+N)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 5v14"></path>
-                    <path d="M5 12h14"></path>
-                </svg>
-            </button>
-            <h1>nanochat</h1>
-        </div>
-    </div>
+    <div class="app-container">
+        <!-- Sidebar Dashboard -->
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <svg class="logo-img" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="48" fill="url(#grad)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                        <path d="M30 45 C 40 35, 60 35, 70 45 C 60 55, 40 55, 30 45 Z" fill="white" opacity="0.9"/>
+                        <path d="M40 50 C 45 47, 55 47, 60 50 C 55 55, 45 55, 40 50 Z" fill="#6366f1"/>
+                        <circle cx="50" cy="50" r="3" fill="white"/>
+                        <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366f1" />
+                                <stop offset="100%" stop-color="#a855f7" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="logo-text">nanochat</span>
+                </div>
+                <button class="footer-btn" style="width: auto; height: 32px; padding: 0 0.5rem;" onclick="newConversation()" title="New Chat">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
 
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-wrapper" id="chatWrapper">
-            <!-- Messages will be added here -->
-        </div>
-    </div>
+            <div class="sidebar-content">
+                <!-- Controls section -->
+                <div>
+                    <div class="section-title">Model Settings</div>
 
-    <div class="input-container">
-        <div class="input-wrapper">
-            <textarea
-                id="chatInput"
-                class="chat-input"
-                placeholder="Ask anything"
-                rows="1"
-                onkeydown="handleKeyDown(event)"
-            ></textarea>
-            <button id="sendButton" class="send-button" onclick="sendMessage()" disabled>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 2L11 13"></path>
-                    <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-                </svg>
-            </button>
-        </div>
+                    <!-- Temperature -->
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Temperature</span>
+                            <span class="control-value" id="tempVal">0.8</span>
+                        </div>
+                        <input type="range" class="custom-slider" id="tempSlider" min="0.0" max="2.0" step="0.1" value="0.8" oninput="updateTemp(this.value)">
+                        <div class="control-description">High values make the output more creative and random; lower values make it focused.</div>
+                    </div>
+
+                    <!-- Top-K -->
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Top-K</span>
+                            <span class="control-value" id="topkVal">50</span>
+                        </div>
+                        <input type="range" class="custom-slider" id="topkSlider" min="0" max="200" step="5" value="50" oninput="updateTopK(this.value)">
+                        <div class="control-description">Caps generation vocabulary selection to the top N options. Set to 0 to disable.</div>
+                    </div>
+
+                    <!-- Max New Tokens -->
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Max Tokens</span>
+                            <span class="control-value" id="tokensVal">512</span>
+                        </div>
+                        <input type="range" class="custom-slider" id="tokensSlider" min="32" max="2048" step="32" value="512" oninput="updateTokens(this.value)">
+                        <div class="control-description">Maximum count of output tokens generated per assistant response.</div>
+                    </div>
+                </div>
+
+                <!-- Backend Telemetry -->
+                <div>
+                    <div class="section-title">Backend Telemetry</div>
+                    <div class="stats-widget">
+                        <div class="stat-row">
+                            <span class="stat-label">Engine Status</span>
+                            <span id="engineBadge" class="stat-badge badge-inactive">Offline</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active GPU Workers</span>
+                            <span class="stat-val" id="activeWorkers">0 / 0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Active Host GPU Info</span>
+                            <div class="gpus-list" id="gpuList">
+                                <div style="color: var(--text-muted);">No active replicas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="footer-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle Light/Dark Mode">
+                    <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <span>Appearance</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="chat-header-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="chat-title-info">
+                        <span class="chat-title" id="chatTitle">gpt-2 speedrun node</span>
+                        <span class="chat-subtitle" id="chatSubtitle">local execution model</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-wrapper" id="chatWrapper">
+                    <!-- Default Dashboard if no messages -->
+                    <div class="welcome-container" id="welcomeContainer">
+                        <svg class="welcome-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <h2 class="welcome-title">Welcome to NanoChat</h2>
+                        <p class="welcome-subtitle">Ask questions, run calculations, or explore LLM pretrain responses interactively.</p>
+                        
+                        <div class="starters-grid">
+                            <div class="starter-card" onclick="useStarter('Explain how training loss works in LLMs')">
+                                <span class="starter-title">Explain LLM Loss</span>
+                                <span class="starter-desc">Ask about cross-entropy and scaling.</span>
+                            </div>
+                            <div class="starter-card" onclick="useStarter('Perform a simple calculation: 1024 * 768 / 12')">
+                                <span class="starter-title">Trigger Calculator Tool</span>
+                                <span class="starter-desc">Send Python code to verify the parser.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input bar -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea
+                        id="chatInput"
+                        class="chat-input"
+                        placeholder="Type a message or command (e.g. /help)..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                    <button id="sendButton" class="send-button" onclick="sendMessage()" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
@@ -281,15 +847,19 @@
         const chatWrapper = document.getElementById('chatWrapper');
         const chatInput = document.getElementById('chatInput');
         const sendButton = document.getElementById('sendButton');
+        const welcomeContainer = document.getElementById('welcomeContainer');
+        const appSidebar = document.getElementById('appSidebar');
 
         let messages = [];
         let isGenerating = false;
         let currentTemperature = 0.8;
         let currentTopK = 50;
+        let currentMaxTokens = 512;
 
+        // Auto-resize chat textarea
         chatInput.addEventListener('input', function() {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 180) + 'px';
             sendButton.disabled = !this.value.trim() || isGenerating;
         });
 
@@ -300,85 +870,148 @@
             }
         }
 
-        document.addEventListener('keydown', function(event) {
-            // Ctrl+Shift+N for new conversation
-            if (event.ctrlKey && event.shiftKey && event.key === 'N') {
-                event.preventDefault();
-                if (!isGenerating) {
-                    newConversation();
-                }
-            }
-        });
+        // Sidebar responsive menu toggle
+        function toggleSidebar() {
+            appSidebar.classList.toggle('active');
+        }
 
+        // Theme switching helper
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const targetTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            localStorage.setItem('theme', targetTheme);
+
+            const themeIcon = document.getElementById('themeIcon');
+            if (targetTheme === 'light') {
+                themeIcon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22">';
+            } else {
+                themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            }
+        }
+
+        // Set initial theme from storage
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'light') {
+            toggleTheme(); // sync icons
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+
+        // Update Slider functions
+        function updateTemp(val) {
+            currentTemperature = parseFloat(val);
+            document.getElementById('tempVal').textContent = val;
+        }
+
+        function updateTopK(val) {
+            currentTopK = parseInt(val);
+            document.getElementById('topkVal').textContent = val;
+        }
+
+        function updateTokens(val) {
+            currentMaxTokens = parseInt(val);
+            document.getElementById('tokensVal').textContent = val;
+        }
+
+        function useStarter(text) {
+            chatInput.value = text;
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
+            sendButton.disabled = false;
+            sendMessage();
+        }
+
+        // Clear layout on new conversation
         function newConversation() {
             messages = [];
             chatWrapper.innerHTML = '';
+            chatWrapper.appendChild(welcomeContainer);
             chatInput.value = '';
             chatInput.style.height = 'auto';
-            sendButton.disabled = false;
+            sendButton.disabled = true;
             isGenerating = false;
             chatInput.focus();
         }
 
         function addMessage(role, content, messageIndex = null) {
+            // Hide welcome screen on first message
+            if (welcomeContainer.parentNode) {
+                welcomeContainer.remove();
+            }
+
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
 
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'avatar';
+            avatarDiv.textContent = role === 'user' ? 'U' : 'AI';
+
+            const contentWrapper = document.createElement('div');
+            contentWrapper.className = 'message-content-wrapper';
+
+            const senderSpan = document.createElement('span');
+            senderSpan.className = 'message-sender';
+            senderSpan.textContent = role === 'user' ? 'You' : 'Assistant';
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = content;
+            
+            // Tool/Calculator execution formatting
+            if (role === 'console') {
+                contentDiv.textContent = content;
+                messageDiv.appendChild(contentDiv);
+            } else {
+                contentDiv.textContent = content;
+                contentWrapper.appendChild(senderSpan);
+                contentWrapper.appendChild(contentDiv);
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentWrapper);
+            }
 
-            // Add click handler for user messages to enable editing
+            // Edit click handlers
             if (role === 'user' && messageIndex !== null) {
                 contentDiv.setAttribute('data-message-index', messageIndex);
-                contentDiv.setAttribute('title', 'Click to edit and restart from here');
+                contentDiv.setAttribute('title', 'Click to edit and restart');
                 contentDiv.addEventListener('click', function() {
-                    if (!isGenerating) {
-                        editMessage(messageIndex);
-                    }
+                    if (!isGenerating) editMessage(messageIndex);
                 });
             }
 
-            // Add click handler for assistant messages to enable regeneration
             if (role === 'assistant' && messageIndex !== null) {
                 contentDiv.setAttribute('data-message-index', messageIndex);
-                contentDiv.setAttribute('title', 'Click to regenerate this response');
+                contentDiv.setAttribute('title', 'Click to regenerate response');
                 contentDiv.addEventListener('click', function() {
-                    if (!isGenerating) {
-                        regenerateMessage(messageIndex);
-                    }
+                    if (!isGenerating) regenerateMessage(messageIndex);
                 });
             }
 
-            messageDiv.appendChild(contentDiv);
             chatWrapper.appendChild(messageDiv);
-
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return contentDiv;
         }
 
         function editMessage(messageIndex) {
-            // Find the message in the messages array
             if (messageIndex < 0 || messageIndex >= messages.length) return;
 
             const messageToEdit = messages[messageIndex];
             if (messageToEdit.role !== 'user') return;
 
-            // Copy message content to input
             chatInput.value = messageToEdit.content;
             chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 200) + 'px';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 180) + 'px';
 
-            // Remove this message and all subsequent messages from the array
             messages = messages.slice(0, messageIndex);
 
-            // Remove message elements from DOM starting from messageIndex
             const allMessages = chatWrapper.querySelectorAll('.message');
             for (let i = messageIndex; i < allMessages.length; i++) {
                 allMessages[i].remove();
             }
 
-            // Enable send button and focus input
+            if (messages.length === 0) {
+                chatWrapper.appendChild(welcomeContainer);
+            }
+
             sendButton.disabled = false;
             chatInput.focus();
         }
@@ -388,7 +1021,12 @@
             sendButton.disabled = true;
 
             const assistantContent = addMessage('assistant', '');
-            assistantContent.innerHTML = '<span class="typing-indicator"></span>';
+            assistantContent.innerHTML = `
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>`;
 
             try {
                 const response = await fetch(`${API_URL}/chat/completions`, {
@@ -400,7 +1038,7 @@
                         messages: messages,
                         temperature: currentTemperature,
                         top_k: currentTopK,
-                        max_tokens: 512
+                        max_tokens: currentMaxTokens
                     }),
                 });
 
@@ -438,13 +1076,10 @@
                 const assistantMessageIndex = messages.length;
                 messages.push({ role: 'assistant', content: fullResponse });
 
-                // Add click handler to regenerate this assistant message
                 assistantContent.setAttribute('data-message-index', assistantMessageIndex);
-                assistantContent.setAttribute('title', 'Click to regenerate this response');
+                assistantContent.setAttribute('title', 'Click to regenerate response');
                 assistantContent.addEventListener('click', function() {
-                    if (!isGenerating) {
-                        regenerateMessage(assistantMessageIndex);
-                    }
+                    if (!isGenerating) regenerateMessage(assistantMessageIndex);
                 });
 
             } catch (error) {
@@ -457,22 +1092,18 @@
         }
 
         async function regenerateMessage(messageIndex) {
-            // Find the message in the messages array
             if (messageIndex < 0 || messageIndex >= messages.length) return;
 
             const messageToRegenerate = messages[messageIndex];
             if (messageToRegenerate.role !== 'assistant') return;
 
-            // Remove this message and all subsequent messages from the array
             messages = messages.slice(0, messageIndex);
 
-            // Remove message elements from DOM starting from messageIndex
             const allMessages = chatWrapper.querySelectorAll('.message');
             for (let i = messageIndex; i < allMessages.length; i++) {
                 allMessages[i].remove();
             }
 
-            // Regenerate the assistant response
             await generateAssistantResponse();
         }
 
@@ -489,7 +1120,8 @@
                     if (isNaN(temp) || temp < 0 || temp > 2) {
                         addMessage('console', 'Invalid temperature. Must be between 0.0 and 2.0');
                     } else {
-                        currentTemperature = temp;
+                        updateTemp(temp);
+                        document.getElementById('tempSlider').value = temp;
                         addMessage('console', `Temperature set to ${currentTemperature}`);
                     }
                 }
@@ -499,10 +1131,11 @@
                     addMessage('console', `Current top-k: ${currentTopK}`);
                 } else {
                     const topk = parseInt(arg);
-                    if (isNaN(topk) || topk < 1 || topk > 200) {
-                        addMessage('console', 'Invalid top-k. Must be between 1 and 200');
+                    if (isNaN(topk) || topk < 0 || topk > 200) {
+                        addMessage('console', 'Invalid top-k. Must be between 0 and 200');
                     } else {
-                        currentTopK = topk;
+                        updateTopK(topk);
+                        document.getElementById('topkSlider').value = topk;
                         addMessage('console', `Top-k set to ${currentTopK}`);
                     }
                 }
@@ -516,7 +1149,7 @@
                     '/temperature - Show current temperature\n' +
                     '/temperature <value> - Set temperature (0.0-2.0)\n' +
                     '/topk - Show current top-k\n' +
-                    '/topk <value> - Set top-k (1-200)\n' +
+                    '/topk <value> - Set top-k (0-200)\n' +
                     '/clear - Clear conversation\n' +
                     '/help - Show this help message'
                 );
@@ -529,7 +1162,6 @@
             const message = chatInput.value.trim();
             if (!message || isGenerating) return;
 
-            // Handle slash commands
             if (message.startsWith('/')) {
                 chatInput.value = '';
                 chatInput.style.height = 'auto';
@@ -547,20 +1179,49 @@
             await generateAssistantResponse();
         }
 
+        // Live Telemetry Poller
+        function pollTelemetry() {
+            fetch(`${API_URL}/health`)
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('engineBadge');
+                    badge.textContent = data.ready ? 'Online' : 'Loading';
+                    badge.className = data.ready ? 'stat-badge badge-active' : 'stat-badge badge-inactive';
+                    
+                    document.getElementById('activeWorkers').textContent = `${data.available_workers} / ${data.num_gpus || 0}`;
+                })
+                .catch(error => {
+                    const badge = document.getElementById('engineBadge');
+                    badge.textContent = 'Offline';
+                    badge.className = 'stat-badge badge-inactive';
+                    document.getElementById('activeWorkers').textContent = '0 / 0';
+                });
+
+            fetch(`${API_URL}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    const listContainer = document.getElementById('gpuList');
+                    listContainer.innerHTML = '';
+                    if (data.workers && data.workers.length > 0) {
+                        data.workers.forEach(w => {
+                            const item = document.createElement('div');
+                            item.className = 'gpu-item';
+                            item.innerHTML = `<span>GPU ${w.gpu_id}</span><span>${w.device}</span>`;
+                            listContainer.appendChild(item);
+                        });
+                    } else {
+                        listContainer.innerHTML = '<div style="color: var(--text-muted);">No active replicas</div>';
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Run poller immediately on load and every 5 seconds
+        pollTelemetry();
+        setInterval(pollTelemetry, 5000);
+
         sendButton.disabled = false;
-
-        // Autofocus the chat input on page load
         chatInput.focus();
-
-        fetch(`${API_URL}/health`)
-            .then(response => response.json())
-            .then(data => {
-                console.log('Engine status:', data);
-            })
-            .catch(error => {
-                console.error('Engine not available:', error);
-                chatWrapper.innerHTML = '<div class="error-message">Engine not running. Please start engine.py first.</div>';
-            });
     </script>
 </body>
 </html>

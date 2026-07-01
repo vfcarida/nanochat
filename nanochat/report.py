@@ -80,7 +80,7 @@ def get_system_info():
     info['memory_gb'] = psutil.virtual_memory().total / (1024**3)
 
     # User and environment
-    info['user'] = os.environ.get('USER', 'unknown')
+    info['user'] = os.environ.get('USER', os.environ.get('USERNAME', 'unknown'))
     info['nanochat_base_dir'] = os.environ.get('NANOCHAT_BASE_DIR', 'out')
     info['working_dir'] = os.getcwd()
 
