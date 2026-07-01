@@ -8,7 +8,7 @@
 ![nanochat logo](dev/nanochat.png)
 ![scaling laws](dev/scaling_laws_jan26.png)
 
-## Overview & Executive Vision
+## Overview
 
 nanochat is the simplest experimental harness for training LLMs. It is designed to run on a single GPU node, the code is minimal/hackable, and it covers all major LLM stages including tokenization, pretraining, finetuning, evaluation, inference, and a chat UI.
 
